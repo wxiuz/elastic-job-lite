@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:reg="http://www.dangdang.com/schema/ddframe/reg"
+       xmlns:job="http://www.dangdang.com/schema/ddframe/job"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                        http://www.springframework.org/schema/beans/spring-beans.xsd
+                        http://www.dangdang.com/schema/ddframe/reg
+                        http://www.dangdang.com/schema/ddframe/reg/reg.xsd
+                        http://www.dangdang.com/schema/ddframe/job
+                        http://www.dangdang.com/schema/ddframe/job/job.xsd">
+    <!--配置作业注册中心 -->
+    <reg:zookeeper id="regCenter"
+                   server-lists="localhost:2181"
+                   namespace="stux-elastic-job"
+                   max-retries="3"
+                   base-sleep-time-milliseconds="1000"
+                   max-sleep-time-milliseconds="3000"
+                   connection-timeout-milliseconds="5000"/>
+
+    <!-- 配置作业-->
+    <job:simple id="elasticSimpleJobStux"
+                class="com.xiuz.stux.elastic.job.lite.jobs.MySimpleJob"
+                registry-center-ref="regCenter"
+                cron="0/5 * * * * ?"
+                sharding-total-count="3"
+                sharding-item-parameters="0=A,1=B,2=C"
+                event-trace-rdb-data-source="dataSource"
+                description="simple 类型Job"
+                disabled="true"
+                failover="true"
+                job-parameter="simple job parameter"
+                misfire="true"
+                overwrite="false"/>
+
+    <job:dataflow id="elasticDataflowJobStux"
+                class="com.xiuz.stux.elastic.job.lite.jobs.MyDataflowJob"
+                registry-center-ref="regCenter"
+                cron="0/7 * * * * ?"
+                sharding-total-count="3"
+                sharding-item-parameters="0=A,1=B,2=C"
+                event-trace-rdb-data-source="dataSource"
+                description="dataflow 类型Job"
+                disabled="true"
+                failover="true"
+                job-parameter="dataflow job parameter"
+                misfire="true"
+                overwrite="false"
+                streaming-process="false"/>
+</beans>

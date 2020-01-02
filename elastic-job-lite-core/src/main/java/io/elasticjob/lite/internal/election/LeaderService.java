@@ -47,7 +47,12 @@ public final class LeaderService {
     }
     
     /**
-     * 选举主节点.
+     * 选举主节点，选举流程为：
+     *
+     * <p>
+     * 每个节点通过获取分布式锁leader/election/latch，并在leader/election下写入临时节点instance，
+     * 如果写入成功，则当前节点为主节点，主节点主要是进行作业分片
+     * </p>
      */
     public void electLeader() {
         log.debug("Elect a new leader now.");

@@ -43,7 +43,7 @@ public final class JobScheduleController {
     private final String triggerIdentity;
     
     /**
-     * 调度作业.
+     * 调度作业. 将作业交由quartz来进行调度
      * 
      * @param cron CRON表达式
      */

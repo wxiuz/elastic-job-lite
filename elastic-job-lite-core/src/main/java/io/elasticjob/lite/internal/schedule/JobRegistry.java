@@ -33,7 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class JobRegistry {
-    
+
+    // volatile避免DCL缺陷
     private static volatile JobRegistry instance;
     
     private Map<String, JobScheduleController> schedulerMap = new ConcurrentHashMap<>();

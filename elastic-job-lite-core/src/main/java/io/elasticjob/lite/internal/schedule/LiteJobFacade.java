@@ -72,12 +72,23 @@ public final class LiteJobFacade implements JobFacade {
         this.elasticJobListeners = elasticJobListeners;
         this.jobEventBus = jobEventBus;
     }
-    
+
+    /**
+     * 加载job配置
+     *
+     * @param fromCache 是否从缓存中读取
+     * @return
+     */
     @Override
     public LiteJobConfiguration loadJobRootConfiguration(final boolean fromCache) {
         return configService.load(fromCache);
     }
-    
+
+    /**
+     * 检查当前节点与zk服务器的时间差
+     *
+     * @throws JobExecutionEnvironmentException
+     */
     @Override
     public void checkJobExecutionEnvironment() throws JobExecutionEnvironmentException {
         configService.checkMaxTimeDiffSecondsTolerable();
@@ -112,7 +123,9 @@ public final class LiteJobFacade implements JobFacade {
                 return executionContextService.getJobShardingContext(failoverShardingItems);
             }
         }
+        // 如果需要进行重新分片，则进行重新分片
         shardingService.shardingIfNecessary();
+        // 获取当前节点所有用的分片
         List<Integer> shardingItems = shardingService.getLocalShardingItems();
         if (isFailover) {
             shardingItems.removeAll(failoverService.getLocalTakeOffItems());

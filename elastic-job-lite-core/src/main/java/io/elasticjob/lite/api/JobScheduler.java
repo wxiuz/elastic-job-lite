@@ -48,7 +48,7 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * 作业调度器.
+ * 作业调度器. 每个作业都有一个单独的作业调度器
  * 
  * @author zhangliang
  * @author caohao
@@ -58,9 +58,11 @@ public class JobScheduler {
     public static final String ELASTIC_JOB_DATA_MAP_KEY = "elasticJob";
     
     private static final String JOB_FACADE_DATA_MAP_KEY = "jobFacade";
-    
+
+    // 作业配置
     private final LiteJobConfiguration liteJobConfig;
-    
+
+    // 注册中心配置
     private final CoordinatorRegistryCenter regCenter;
     
     // TODO 为测试使用,测试用例不能反复new monitor service,以后需要把MonitorService重构为单例
@@ -79,12 +81,15 @@ public class JobScheduler {
     }
     
     private JobScheduler(final CoordinatorRegistryCenter regCenter, final LiteJobConfiguration liteJobConfig, final JobEventBus jobEventBus, final ElasticJobListener... elasticJobListeners) {
+        // JobRegistry可看做为缓存信息
         JobRegistry.getInstance().addJobInstance(liteJobConfig.getJobName(), new JobInstance());
         this.liteJobConfig = liteJobConfig;
         this.regCenter = regCenter;
         List<ElasticJobListener> elasticJobListenerList = Arrays.asList(elasticJobListeners);
         setGuaranteeServiceForElasticJobListeners(regCenter, elasticJobListenerList);
+        // 调度工具类
         schedulerFacade = new SchedulerFacade(regCenter, liteJobConfig.getJobName(), elasticJobListenerList);
+        // 作业工具类
         jobFacade = new LiteJobFacade(regCenter, liteJobConfig.getJobName(), Arrays.asList(elasticJobListeners), jobEventBus);
     }
     
@@ -101,16 +106,28 @@ public class JobScheduler {
      * 初始化作业.
      */
     public void init() {
+        // 将作业配置信息写入到zk上的config节点
         LiteJobConfiguration liteJobConfigFromRegCenter = schedulerFacade.updateJobConfiguration(liteJobConfig);
+        // 缓存作业的分片总数
         JobRegistry.getInstance().setCurrentShardingTotalCount(liteJobConfigFromRegCenter.getJobName(), liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getShardingTotalCount());
+        // 创建quartz调度器和quartz作业
         JobScheduleController jobScheduleController = new JobScheduleController(
                 createScheduler(), createJobDetail(liteJobConfigFromRegCenter.getTypeConfig().getJobClass()), liteJobConfigFromRegCenter.getJobName());
         JobRegistry.getInstance().registerJob(liteJobConfigFromRegCenter.getJobName(), jobScheduleController, regCenter);
+        // 初始化作业信息至zk上
         schedulerFacade.registerStartUpInfo(!liteJobConfigFromRegCenter.isDisabled());
+        // 调度作业，将作业交由quartz来调度
         jobScheduleController.scheduleJob(liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getCron());
     }
-    
+
+    /**
+     * 创建quartz的作业
+     *
+     * @param jobClass
+     * @return
+     */
     private JobDetail createJobDetail(final String jobClass) {
+        // elastic-job中的所有定义的作业都转换为quartz的LiteJob，quartz每次触发作业调度都会创建一个新的LiteJob实例
         JobDetail result = JobBuilder.newJob(LiteJob.class).withIdentity(liteJobConfig.getJobName()).build();
         result.getJobDataMap().put(JOB_FACADE_DATA_MAP_KEY, jobFacade);
         Optional<ElasticJob> elasticJobInstance = createElasticJobInstance();
@@ -129,7 +146,13 @@ public class JobScheduler {
     protected Optional<ElasticJob> createElasticJobInstance() {
         return Optional.absent();
     }
-    
+
+    /**
+     * 创建Quartz的调度器，该调度器基于内存的操作，线程池中工作线程数量为1，
+     * 所以Elastic-Job的底层还是依赖于Quartz来完成作业的调度
+     *
+     * @return
+     */
     private Scheduler createScheduler() {
         Scheduler result;
         try {

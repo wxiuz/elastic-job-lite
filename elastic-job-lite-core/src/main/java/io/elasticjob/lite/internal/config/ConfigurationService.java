@@ -26,7 +26,9 @@ import io.elasticjob.lite.reg.base.CoordinatorRegistryCenter;
 import io.elasticjob.lite.util.env.TimeService;
 
 /**
- * 弹性化分布式作业配置服务.
+ * 弹性化分布式作业配置服务，主要功能为：
+ * （1）读取zk上作业节点下的config节点内容
+ * （2）将LiteJobConfiguration转为json存储到zk上的作业节点下的config节点内容上
  * 
  * @author zhangliang
  * @author caohao
@@ -43,7 +45,7 @@ public final class ConfigurationService {
     }
     
     /**
-     * 读取作业配置.
+     * 读取作业配置. 获取zk中config节点内容
      * 
      * @param fromCache 是否从缓存中读取
      * @return 作业配置
@@ -62,7 +64,7 @@ public final class ConfigurationService {
     }
     
     /**
-     * 持久化分布式作业配置信息.
+     * 持久化分布式作业配置信息. 将LiteJobConfiguration转为json串持久化到zk的config节点上
      * 
      * @param liteJobConfig 作业配置
      */

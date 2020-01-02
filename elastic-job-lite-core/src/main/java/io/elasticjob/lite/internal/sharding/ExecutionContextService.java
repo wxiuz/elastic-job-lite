@@ -92,7 +92,14 @@ public final class ExecutionContextService {
     private boolean isRunning(final int shardingItem) {
         return jobNodeStorage.isJobNodeExisted(ShardingNode.getRunningNode(shardingItem));
     }
-    
+
+    /**
+     * 根据当前节点的分片获取对应分片的参数
+     *
+     * @param shardingItems 当前节点的分片
+     * @param shardingItemParameterMap 所有分片的参数
+     * @return 当前节点的分片参数
+     */
     private Map<Integer, String> getAssignedShardingItemParameterMap(final List<Integer> shardingItems, final Map<Integer, String> shardingItemParameterMap) {
         Map<Integer, String> result = new HashMap<>(shardingItemParameterMap.size(), 1);
         for (int each : shardingItems) {

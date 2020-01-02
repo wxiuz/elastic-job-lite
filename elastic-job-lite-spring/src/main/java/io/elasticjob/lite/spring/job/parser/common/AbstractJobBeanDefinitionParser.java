@@ -45,9 +45,10 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
     
     @Override
     protected AbstractBeanDefinition parseInternal(final Element element, final ParserContext parserContext) {
+        // 每个Job都常见一个SpringJobScheduler
         BeanDefinitionBuilder factory = BeanDefinitionBuilder.rootBeanDefinition(SpringJobScheduler.class);
         factory.setInitMethodName("init");
-        //TODO 抽象子类
+        // job配置job-ref优先级高于class属性
         if ("".equals(element.getAttribute(BaseJobBeanDefinitionParserTag.JOB_REF_ATTRIBUTE))) {
             if ("".equals(element.getAttribute(BaseJobBeanDefinitionParserTag.CLASS_ATTRIBUTE))) {
                 factory.addConstructorArgValue(null);
@@ -68,7 +69,14 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
     }
     
     protected abstract BeanDefinition getJobTypeConfigurationBeanDefinition(ParserContext parserContext, BeanDefinition jobCoreConfigurationBeanDefinition, Element element);
-    
+
+    /**
+     * 创建LiteJobConfiguration
+     *
+     * @param parserContext
+     * @param element
+     * @return
+     */
     private BeanDefinition createLiteJobConfiguration(final ParserContext parserContext, final Element element) {
         return createLiteJobConfigurationBeanDefinition(parserContext, element, createJobCoreBeanDefinition(element));
     }
@@ -85,7 +93,13 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
         result.addConstructorArgValue(element.getAttribute(BaseJobBeanDefinitionParserTag.OVERWRITE_ATTRIBUTE));
         return result.getBeanDefinition();
     }
-    
+
+    /**
+     * 创建JobCoreConfiguration
+     *
+     * @param element
+     * @return
+     */
     private BeanDefinition createJobCoreBeanDefinition(final Element element) {
         BeanDefinitionBuilder jobCoreBeanDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(JobCoreConfiguration.class);
         jobCoreBeanDefinitionBuilder.addConstructorArgValue(element.getAttribute(ID_ATTRIBUTE));
@@ -108,7 +122,13 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
         result.addConstructorArgValue(map);
         return result.getBeanDefinition();
     }
-    
+
+    /**
+     * 创建时间跟踪配置
+     *
+     * @param element
+     * @return
+     */
     private BeanDefinition createJobEventConfig(final Element element) {
         String eventTraceDataSourceName = element.getAttribute(BaseJobBeanDefinitionParserTag.EVENT_TRACE_RDB_DATA_SOURCE_ATTRIBUTE);
         if (Strings.isNullOrEmpty(eventTraceDataSourceName)) {

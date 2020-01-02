@@ -73,10 +73,15 @@ public final class SchedulerFacade {
     
     public SchedulerFacade(final CoordinatorRegistryCenter regCenter, final String jobName, final List<ElasticJobListener> elasticJobListeners) {
         this.jobName = jobName;
+        // zk config节点工具类
         configService = new ConfigurationService(regCenter, jobName);
+        // zk leader节点工具类
         leaderService = new LeaderService(regCenter, jobName);
+        // zk servers节点工具类
         serverService = new ServerService(regCenter, jobName);
+        // zk instances节点工具类
         instanceService = new InstanceService(regCenter, jobName);
+        // zk sharding节点工具类
         shardingService = new ShardingService(regCenter, jobName);
         executionService = new ExecutionService(regCenter, jobName);
         monitorService = new MonitorService(regCenter, jobName);
@@ -111,9 +116,13 @@ public final class SchedulerFacade {
      */
     public void registerStartUpInfo(final boolean enabled) {
         listenerManager.startAllListeners();
+        // 开始选举主节点
         leaderService.electLeader();
+        // 设置该作业禁用状态
         serverService.persistOnline(enabled);
+        // 创建instances节点
         instanceService.persistOnline();
+        // 设置分片标志为需要重新分片
         shardingService.setReshardingFlag();
         monitorService.listen();
         if (!reconcileService.isRunning()) {

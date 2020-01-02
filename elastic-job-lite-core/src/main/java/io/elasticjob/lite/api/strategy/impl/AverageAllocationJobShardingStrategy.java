@@ -40,7 +40,15 @@ import java.util.Map;
  * @author zhangliang
  */
 public final class AverageAllocationJobShardingStrategy implements JobShardingStrategy {
-    
+
+    /**
+     *  分片操作，某个实例拥有哪些分片
+     *
+     * @param jobInstances 所有参与分片的单元列表
+     * @param jobName 作业名称
+     * @param shardingTotalCount 分片总数
+     * @return
+     */
     @Override
     public Map<JobInstance, List<Integer>> sharding(final List<JobInstance> jobInstances, final String jobName, final int shardingTotalCount) {
         if (jobInstances.isEmpty()) {

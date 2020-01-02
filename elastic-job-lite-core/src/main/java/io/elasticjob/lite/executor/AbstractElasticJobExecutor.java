@@ -96,6 +96,7 @@ public abstract class AbstractElasticJobExecutor {
      */
     public final void execute() {
         try {
+            // 检查当前机器与zk服务器时间差
             jobFacade.checkJobExecutionEnvironment();
         } catch (final JobExecutionEnvironmentException cause) {
             jobExceptionHandler.handleException(jobName, cause);
@@ -119,6 +120,7 @@ public abstract class AbstractElasticJobExecutor {
             //CHECKSTYLE:ON
             jobExceptionHandler.handleException(jobName, cause);
         }
+        // 执行job
         execute(shardingContexts, JobExecutionEvent.ExecutionSource.NORMAL_TRIGGER);
         while (jobFacade.isExecuteMisfired(shardingContexts.getShardingItemParameters().keySet())) {
             jobFacade.clearMisfire(shardingContexts.getShardingItemParameters().keySet());
@@ -172,6 +174,7 @@ public abstract class AbstractElasticJobExecutor {
             return;
         }
         final CountDownLatch latch = new CountDownLatch(items.size());
+        // 所有分片异步执行，等所有的分片执行完才算完成
         for (final int each : items) {
             final JobExecutionEvent jobExecutionEvent = new JobExecutionEvent(shardingContexts.getTaskId(), jobName, executionSource, each);
             if (executorService.isShutdown()) {

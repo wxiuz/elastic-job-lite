@@ -34,7 +34,8 @@ public final class JobEventBus {
     private final JobEventConfiguration jobEventConfig;
     
     private final ExecutorServiceObject executorServiceObject;
-    
+
+    // 使用Guava的事件总线
     private final EventBus eventBus;
     
     private boolean isRegistered;
@@ -48,7 +49,9 @@ public final class JobEventBus {
     public JobEventBus(final JobEventConfiguration jobEventConfig) {
         this.jobEventConfig = jobEventConfig;
         executorServiceObject = new ExecutorServiceObject("job-event", Runtime.getRuntime().availableProcessors() * 2);
+        // 异步的事件总线
         eventBus = new AsyncEventBus(executorServiceObject.createExecutorService());
+        // 注册监听器
         register();
     }
     
