@@ -29,12 +29,7 @@ import io.elasticjob.lite.exception.JobConfigurationException;
 import io.elasticjob.lite.exception.JobSystemException;
 import io.elasticjob.lite.executor.JobFacade;
 import io.elasticjob.lite.internal.guarantee.GuaranteeService;
-import io.elasticjob.lite.internal.schedule.JobRegistry;
-import io.elasticjob.lite.internal.schedule.JobScheduleController;
-import io.elasticjob.lite.internal.schedule.JobShutdownHookPlugin;
-import io.elasticjob.lite.internal.schedule.LiteJob;
-import io.elasticjob.lite.internal.schedule.LiteJobFacade;
-import io.elasticjob.lite.internal.schedule.SchedulerFacade;
+import io.elasticjob.lite.internal.schedule.*;
 import io.elasticjob.lite.reg.base.CoordinatorRegistryCenter;
 import lombok.Getter;
 import org.quartz.JobBuilder;
@@ -49,14 +44,14 @@ import java.util.Properties;
 
 /**
  * 作业调度器. 每个作业都有一个单独的作业调度器
- * 
+ *
  * @author zhangliang
  * @author caohao
  */
 public class JobScheduler {
-    
+
     public static final String ELASTIC_JOB_DATA_MAP_KEY = "elasticJob";
-    
+
     private static final String JOB_FACADE_DATA_MAP_KEY = "jobFacade";
 
     // 作业配置
@@ -64,22 +59,22 @@ public class JobScheduler {
 
     // 注册中心配置
     private final CoordinatorRegistryCenter regCenter;
-    
+
     // TODO 为测试使用,测试用例不能反复new monitor service,以后需要把MonitorService重构为单例
     @Getter
     private final SchedulerFacade schedulerFacade;
-    
+
     private final JobFacade jobFacade;
-    
+
     public JobScheduler(final CoordinatorRegistryCenter regCenter, final LiteJobConfiguration liteJobConfig, final ElasticJobListener... elasticJobListeners) {
         this(regCenter, liteJobConfig, new JobEventBus(), elasticJobListeners);
     }
-    
-    public JobScheduler(final CoordinatorRegistryCenter regCenter, final LiteJobConfiguration liteJobConfig, final JobEventConfiguration jobEventConfig, 
+
+    public JobScheduler(final CoordinatorRegistryCenter regCenter, final LiteJobConfiguration liteJobConfig, final JobEventConfiguration jobEventConfig,
                         final ElasticJobListener... elasticJobListeners) {
         this(regCenter, liteJobConfig, new JobEventBus(jobEventConfig), elasticJobListeners);
     }
-    
+
     private JobScheduler(final CoordinatorRegistryCenter regCenter, final LiteJobConfiguration liteJobConfig, final JobEventBus jobEventBus, final ElasticJobListener... elasticJobListeners) {
         // JobRegistry可看做为缓存信息
         JobRegistry.getInstance().addJobInstance(liteJobConfig.getJobName(), new JobInstance());
@@ -92,7 +87,7 @@ public class JobScheduler {
         // 作业工具类
         jobFacade = new LiteJobFacade(regCenter, liteJobConfig.getJobName(), Arrays.asList(elasticJobListeners), jobEventBus);
     }
-    
+
     private void setGuaranteeServiceForElasticJobListeners(final CoordinatorRegistryCenter regCenter, final List<ElasticJobListener> elasticJobListeners) {
         GuaranteeService guaranteeService = new GuaranteeService(regCenter, liteJobConfig.getJobName());
         for (ElasticJobListener each : elasticJobListeners) {
@@ -101,7 +96,7 @@ public class JobScheduler {
             }
         }
     }
-    
+
     /**
      * 初始化作业.
      */
@@ -142,7 +137,7 @@ public class JobScheduler {
         }
         return result;
     }
-    
+
     protected Optional<ElasticJob> createElasticJobInstance() {
         return Optional.absent();
     }
@@ -156,8 +151,11 @@ public class JobScheduler {
     private Scheduler createScheduler() {
         Scheduler result;
         try {
+            // 创建Quartz的调度器工厂
             StdSchedulerFactory factory = new StdSchedulerFactory();
+            // 初始化Quartz调度器工厂，用于配置调度器
             factory.initialize(getBaseQuartzProperties());
+            // 获取Quartz调度器
             result = factory.getScheduler();
             result.getListenerManager().addTriggerListener(schedulerFacade.newJobTriggerListener());
         } catch (final SchedulerException ex) {
@@ -165,11 +163,15 @@ public class JobScheduler {
         }
         return result;
     }
-    
+
     private Properties getBaseQuartzProperties() {
         Properties result = new Properties();
+        // 使用Quartz自带的线程池：线程池用于来执行具体的Job任务
         result.put("org.quartz.threadPool.class", org.quartz.simpl.SimpleThreadPool.class.getName());
+        // 线程池数量配置为1：在quartz中，任务调度线程会在线程池有可用线程后才能继续触发，所以当一个Job执行时间太长，会导致
+        // 调度线程没法查询出需要触发的任务进行触发【因为调度线程被Block住】
         result.put("org.quartz.threadPool.threadCount", "1");
+        // job名称就是调度器名称
         result.put("org.quartz.scheduler.instanceName", liteJobConfig.getJobName());
         result.put("org.quartz.jobStore.misfireThreshold", "1");
         result.put("org.quartz.plugin.shutdownhook.class", JobShutdownHookPlugin.class.getName());

@@ -37,15 +37,15 @@ import java.util.List;
 
 /**
  * 基本作业的命名空间解析器.
- * 
+ *
  * @author zhangliang
  * @author caohao
  */
 public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefinitionParser {
-    
+
     @Override
     protected AbstractBeanDefinition parseInternal(final Element element, final ParserContext parserContext) {
-        // 每个Job都常见一个SpringJobScheduler
+        // 每个Job都创建一个SpringJobScheduler
         BeanDefinitionBuilder factory = BeanDefinitionBuilder.rootBeanDefinition(SpringJobScheduler.class);
         factory.setInitMethodName("init");
         // job配置job-ref优先级高于class属性
@@ -67,11 +67,14 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
         factory.addConstructorArgValue(createJobListeners(element));
         return factory.getBeanDefinition();
     }
-    
+
     protected abstract BeanDefinition getJobTypeConfigurationBeanDefinition(ParserContext parserContext, BeanDefinition jobCoreConfigurationBeanDefinition, Element element);
 
     /**
      * 创建LiteJobConfiguration
+     * <p>
+     * <p>
+     * LiteJobConfiguration--->JobTypeConfiguration--->JobCoreConfiguration
      *
      * @param parserContext
      * @param element
@@ -80,7 +83,13 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
     private BeanDefinition createLiteJobConfiguration(final ParserContext parserContext, final Element element) {
         return createLiteJobConfigurationBeanDefinition(parserContext, element, createJobCoreBeanDefinition(element));
     }
-    
+
+    /**
+     * @param parserContext
+     * @param element
+     * @param jobCoreBeanDefinition
+     * @return
+     */
     private BeanDefinition createLiteJobConfigurationBeanDefinition(final ParserContext parserContext, final Element element, final BeanDefinition jobCoreBeanDefinition) {
         BeanDefinitionBuilder result = BeanDefinitionBuilder.rootBeanDefinition(LiteJobConfiguration.class);
         result.addConstructorArgValue(getJobTypeConfigurationBeanDefinition(parserContext, jobCoreBeanDefinition, element));
@@ -113,7 +122,7 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
         jobCoreBeanDefinitionBuilder.addConstructorArgValue(createJobPropertiesBeanDefinition(element));
         return jobCoreBeanDefinitionBuilder.getBeanDefinition();
     }
-    
+
     private BeanDefinition createJobPropertiesBeanDefinition(final Element element) {
         BeanDefinitionBuilder result = BeanDefinitionBuilder.rootBeanDefinition(JobProperties.class);
         EnumMap<JobProperties.JobPropertiesEnum, String> map = new EnumMap<>(JobProperties.JobPropertiesEnum.class);
@@ -138,7 +147,7 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
         factory.addConstructorArgReference(eventTraceDataSourceName);
         return factory.getBeanDefinition();
     }
-    
+
     private List<BeanDefinition> createJobListeners(final Element element) {
         Element listenerElement = DomUtils.getChildElementByTagName(element, BaseJobBeanDefinitionParserTag.LISTENER_TAG);
         Element distributedListenerElement = DomUtils.getChildElementByTagName(element, BaseJobBeanDefinitionParserTag.DISTRIBUTED_LISTENER_TAG);
@@ -157,7 +166,7 @@ public abstract class AbstractJobBeanDefinitionParser extends AbstractBeanDefini
         }
         return result;
     }
-    
+
     @Override
     protected boolean shouldGenerateId() {
         return true;

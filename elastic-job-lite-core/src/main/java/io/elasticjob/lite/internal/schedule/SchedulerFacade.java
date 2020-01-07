@@ -34,31 +34,31 @@ import java.util.List;
 
 /**
  * 为调度器提供内部服务的门面类.
- * 
+ *
  * @author zhangliang
  */
 public final class SchedulerFacade {
-    
+
     private final String jobName;
-    
+
     private final ConfigurationService configService;
-    
+
     private final LeaderService leaderService;
-    
+
     private final ServerService serverService;
-    
+
     private final InstanceService instanceService;
-    
+
     private final ShardingService shardingService;
-    
+
     private final ExecutionService executionService;
-    
+
     private final MonitorService monitorService;
-    
+
     private final ReconcileService reconcileService;
-    
+
     private ListenerManager listenerManager;
-    
+
     public SchedulerFacade(final CoordinatorRegistryCenter regCenter, final String jobName) {
         this.jobName = jobName;
         configService = new ConfigurationService(regCenter, jobName);
@@ -70,7 +70,7 @@ public final class SchedulerFacade {
         monitorService = new MonitorService(regCenter, jobName);
         reconcileService = new ReconcileService(regCenter, jobName);
     }
-    
+
     public SchedulerFacade(final CoordinatorRegistryCenter regCenter, final String jobName, final List<ElasticJobListener> elasticJobListeners) {
         this.jobName = jobName;
         // zk config节点工具类
@@ -88,7 +88,7 @@ public final class SchedulerFacade {
         reconcileService = new ReconcileService(regCenter, jobName);
         listenerManager = new ListenerManager(regCenter, jobName, elasticJobListeners);
     }
-    
+
     /**
      * 获取作业触发监听器.
      *
@@ -97,7 +97,7 @@ public final class SchedulerFacade {
     public JobTriggerListener newJobTriggerListener() {
         return new JobTriggerListener(executionService, shardingService);
     }
-    
+
     /**
      * 更新作业配置.
      *
@@ -108,10 +108,10 @@ public final class SchedulerFacade {
         configService.persist(liteJobConfig);
         return configService.load(false);
     }
-    
+
     /**
      * 注册作业启动信息.
-     * 
+     *
      * @param enabled 作业是否启用
      */
     public void registerStartUpInfo(final boolean enabled) {
@@ -122,14 +122,14 @@ public final class SchedulerFacade {
         serverService.persistOnline(enabled);
         // 创建instances节点
         instanceService.persistOnline();
-        // 设置分片标志为需要重新分片
+        // 设置分片标志为需要重新分片，所以如果有新节点加入到集群就会自动触发重新分片
         shardingService.setReshardingFlag();
         monitorService.listen();
         if (!reconcileService.isRunning()) {
             reconcileService.startAsync();
         }
     }
-    
+
     /**
      * 终止作业调度.
      */
